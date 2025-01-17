@@ -29,6 +29,8 @@ import {
   SidebarMenuItem,
   useSidebar,
 } from "@/components/ui/sidebar"
+import { useRouter } from "next/navigation"
+import { deleteCookie, useDeleteCookie } from "cookies-next";
 
 export function NavUser({
   user,
@@ -40,6 +42,17 @@ export function NavUser({
   }
 }) {
   const { isMobile } = useSidebar()
+  const router = useRouter()
+  const deleteCookie = useDeleteCookie();
+
+  // Function to handle logout
+  const handleLogout = () => {
+    // Remove the token cookie
+    deleteCookie("token") // Ensure 'token' is the key used for your auth cookie
+
+    // Redirect to the login page
+    router.push("/login") // Adjust the path if necessary
+  }
 
   return (
     <SidebarMenu>
@@ -102,7 +115,7 @@ export function NavUser({
               </DropdownMenuItem>
             </DropdownMenuGroup>
             <DropdownMenuSeparator />
-            <DropdownMenuItem>
+            <DropdownMenuItem onClick={handleLogout}>
               <LogOut />
               Log out
             </DropdownMenuItem>
