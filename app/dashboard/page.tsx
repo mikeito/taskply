@@ -8,8 +8,18 @@ import {
 } from "@/components/ui/card";
 import { Overview } from "./_components/overview";
 import { RecentSales } from "./_components/recent-sales";
+import { hasCookie } from "cookies-next";
+import { cookies } from "next/headers";
+import { redirect } from "next/navigation";
 
-export default function Page() {
+export default async function Page() {
+  const exists = await hasCookie('token', { cookies });
+  
+    // Check if token exists, if so, redirect to dashboard
+    if (!exists) {
+      redirect("/login");
+    }
+    
   return (
     <>
       <div className="mb-2 flex items-center justify-between space-y-2">

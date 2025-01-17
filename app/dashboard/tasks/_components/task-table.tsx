@@ -2,8 +2,7 @@
 
 import { DataTable } from "@/components/ui/datatable/data-table";
 import { tableAddBtn } from "@/components/utils/ui-utils";
-import { useGetTasks } from "@/src/api/queries";
-import { useMutation, useQuery, useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { deleteTasks, getTasks } from "@/src/api/endpoints";
 import { columns } from "./columns";
 import { useCallback, useMemo } from "react";
@@ -12,79 +11,65 @@ import { useRouter } from "next/navigation";
 import { useTask } from "@/hooks/task-context";
 
 export default function TasksTable() {
-  // const { data } = useSuspenseQuery(useGetTasks);
   const router = useRouter();
-  const { task, setTask, clearTask } = useTask();
-  const { data } = useQuery({ 
-    queryKey: ['tasks'], 
-    queryFn: getTasks 
-  })
-  // Ensure data is always an array, even if it's undefined
+  const { setTask } = useTask();
+
+  // Fetch data using React Query
+  const { data, isLoading } = useQuery({
+    queryKey: ["tasks"],
+    queryFn: getTasks,
+  });
+
+  // Ensure tasks is always an array
   const tasks = data || [];
 
   const queryClient = useQueryClient();
-  // const { toast } = useToast();
 
-  // const deleteMutation = useMutation({
-  //   mutationFn: deleteTasks,
-  //   onSuccess: async () => {
-  //     await queryClient.invalidateQueries({ queryKey: queryKeys.fetchBankAccounts.all });
-  //   },
-  // });
-
+  // Mutation for deleting tasks
   const deleteMutation = useMutation({
     mutationFn: deleteTasks,
-    onSuccess: async (data) => {
-      console.log('success deleting');
-      queryClient.invalidateQueries({ queryKey: ["tasks"] })
-      // router.push("/dashboard/tasks");
+    onSuccess: async () => {
+      console.log("Task deleted successfully");
+      await queryClient.invalidateQueries({ queryKey: ["tasks"] });
     },
     onError: (error) => {
-      console.error("Request failed:", error);
+      console.error("Failed to delete task:", error);
     },
   });
 
+  // Handlers for delete and edit actions
   const onDelete = useCallback((task: Task) => {
-    console.log('Deleting item: ', task.id);
-    
     deleteMutation.mutate(task.id, {
-      onSuccess: () => {
-        console.log('Task was deleted successfully');
-        
-        // toast({ description: 'Task was deleted successfully.' });
-      },
-      onError: () => {
-        console.error('Uh Oh! Something went wrong!');
-        
-        // toast({
-        //   variant: 'destructive',
-        //   title: 'Uh Oh! Something went wrong!',
-        //   description: 'There was a problem with your request.',
-        // });
-      },
+      onSuccess: () => console.log("Task was deleted successfully"),
+      onError: () => console.error("Error deleting task"),
     });
   }, []);
 
   const onEdit = useCallback((task: Task) => {
-    // setSelectedBankAccount(bankAccount);
-    // setIsDialogOpen(true);
-    console.log('Editing: ', task);
-    setTask(task)
-
-  // Navigate to the create page and pass the task as query parameters
-  
-  router.push("/dashboard/tasks/add");
-    
+    setTask(task);
+    router.push("/dashboard/tasks/add");
   }, []);
-  
+
+  // Memoize columns for performance
   const taskColumns = useMemo(() => columns({ onEdit, onDelete }), []);
+
+  // Render loader or data table
+  if (isLoading) {
+    return (
+      <div className="flex justify-center items-center h-64">
+        <div className="spinner-border animate-spin inline-block w-8 h-8 border-4 rounded-full" role="status">
+          <span className="visually-hidden">.</span>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    // <DataTable columns={columns} data={clients} searchColumn="name" searchPlaceholder='search client' createBtn={tableAddBtn('clients/add')}/>
     <DataTable
       columns={taskColumns}
       data={tasks}
       searchColumn="title"
-      searchPlaceholder="search task"
+      searchPlaceholder="Search tasks"
       createBtn={tableAddBtn("tasks/add")}
     />
   );
